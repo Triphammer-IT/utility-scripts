@@ -1,0 +1,111 @@
+# GitHub Actions workflow for whitespace linting
+# Place this file in .github/workflows/whitespace-lint.yml
+
+name: Whitespace Linting
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  whitespace-lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Fetch full history for better analysis
+    
+    - name: Setup whitespace linter
+      run: |
+        # Clone the utility-scripts repository
+        git clone https://github.com/Triphammer-IT/utility-scripts.git /tmp/utility-scripts
+        
+        # Make the linter executable
+        chmod +x /tmp/utility-scripts/whitespace-linter.sh
+        
+        # Add to PATH for easy access
+        echo "/tmp/utility-scripts" >> $GITHUB_PATH
+    
+    - name: Run whitespace linter
+      run: |
+        echo "🔍 Running whitespace linter on the repository..."
+        
+        # Run the linter with verbose output
+        if whitespace-linter.sh -v -r .; then
+          echo "✅ All files pass whitespace linting!"
+        else
+          echo "❌ Whitespace issues found!"
+          echo "💡 Consider running 'whitespace-linter.sh -f -r .' to fix issues automatically"
+          exit 1
+        fi
+    
+    - name: Comment on PR (if applicable)
+      if: github.event_name == 'pull_request' && failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: `## ❌ Whitespace Issues Found
+            
+            This PR contains whitespace issues that need to be fixed:
+            - Trailing whitespace (spaces/tabs at end of lines)
+            - Whitespace-only lines (lines with only spaces/tabs)
+            
+            ### How to fix:
+            1. **Automatic fix**: Run \`whitespace-linter.sh -f -r .\`
+            2. **Manual fix**: Use your editor's "show whitespace" feature
+            3. **Check locally**: Run \`whitespace-linter.sh -v -r .\`
+            
+            ### Get the linter:
+            \`\`\`bash
+            git clone https://github.com/Triphammer-IT/utility-scripts.git
+            ./utility-scripts/whitespace-linter.sh -f -r .
+            \`\`\`
+            `
+          })
+
+  auto-fix:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.actor == 'dependabot[bot]'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+    
+    - name: Setup whitespace linter
+      run: |
+        git clone https://github.com/Triphammer-IT/utility-scripts.git /tmp/utility-scripts
+        chmod +x /tmp/utility-scripts/whitespace-linter.sh
+        echo "/tmp/utility-scripts" >> $GITHUB_PATH
+    
+    - name: Auto-fix whitespace issues
+      run: |
+        echo "🔧 Auto-fixing whitespace issues..."
+        whitespace-linter.sh -f -r .
+        
+        # Check if any files were modified
+        if git diff --quiet; then
+          echo "✅ No whitespace issues found or fixed"
+        else
+          echo "🔧 Whitespace issues were fixed, committing changes..."
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Auto-fix whitespace issues
+
+          - Remove trailing whitespace
+          - Convert whitespace-only lines to empty lines
+          - Fix applied by whitespace-linter.sh"
+          git push
+        fi
