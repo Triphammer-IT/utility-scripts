@@ -62,27 +62,27 @@ should_process_file() {
     local file_path=$1
     local filename
     filename=$(basename "$file_path")
-
+    
     # Skip binary files and common non-text files
     if file "$file_path" | grep -q "binary\|archive\|image\|audio\|video"; then
         return 1
     fi
-
+    
     # Skip executable files that aren't text files
     if file "$file_path" | grep -q "executable" && ! file "$file_path" | grep -q "text"; then
         return 1
     fi
-
+    
     # Skip hidden files and directories
     if [[ "$filename" =~ ^\..* ]]; then
         return 1
     fi
-
+    
     # Skip common build/cache directories
     if [[ "$filename" =~ ^(node_modules|\.git|\.venv|__pycache__|build|dist|target)$ ]]; then
         return 1
     fi
-
+    
     # Check file extensions if specified
     if [[ -n "${extensions:-}" ]]; then
         local ext
@@ -91,7 +91,7 @@ should_process_file() {
             # No extension
             return 1
         fi
-
+        
         local should_include=false
         IFS=',' read -ra EXT_ARRAY <<< "$extensions"
         for allowed_ext in "${EXT_ARRAY[@]}"; do
@@ -100,12 +100,12 @@ should_process_file() {
                 break
             fi
         done
-
+        
         if [[ "$should_include" == false ]]; then
             return 1
         fi
     fi
-
+    
     # Check ignore patterns if specified
     if [[ -n "${ignore_patterns:-}" ]]; then
         IFS=',' read -ra IGNORE_ARRAY <<< "$ignore_patterns"
@@ -115,7 +115,7 @@ should_process_file() {
             fi
         done
     fi
-
+    
     return 0
 }
 
@@ -125,18 +125,18 @@ check_file() {
     local file_issues=0
     local file_trailing=0
     local file_whitespace_only=0
-
+    
     if [[ ! -f "$file_path" ]]; then
         return 0
     fi
-
+    
     # Check if file should be processed
     if ! should_process_file "$file_path"; then
         return 0
     fi
-
+    
     ((total_files++))
-
+    
     # Use awk to process the file line by line
     local issues_output
     issues_output=$(awk -v check_trailing="${check_trailing:-true}" -v check_whitespace_only="${check_whitespace_only:-true}" '
@@ -150,14 +150,14 @@ check_file() {
         line_num++
         line = $0
         original_line = $0
-
+        
         # Check for trailing whitespace
         if (check_trailing == "true" && line ~ /[ \t]+$/) {
             print "TRAILING:" line_num ":" original_line
             trailing_count++
             issues++
         }
-
+        
         # Check for whitespace-only lines (but not empty lines)
         if (check_whitespace_only == "true" && line ~ /^[ \t]+$/) {
             print "WHITESPACE_ONLY:" line_num ":" original_line
@@ -170,10 +170,10 @@ check_file() {
             print "SUMMARY:" issues ":" trailing_count ":" whitespace_only_count
         }
     }' "$file_path" 2>/dev/null || true)
-
+    
     if [[ -n "$issues_output" ]]; then
         ((files_with_issues++))
-
+        
         # Parse the output
         while IFS= read -r line; do
             if [[ "$line" =~ ^SUMMARY: ]]; then
@@ -209,7 +209,7 @@ check_file() {
                 fi
             fi
         done <<< "$issues_output"
-
+        
         if [[ "${quiet:-false}" != "true" ]]; then
             print_status "$RED" "❌ $file_path: $file_issues issues found"
         fi
@@ -225,28 +225,28 @@ fix_file() {
     local file_path=$1
     local temp_file
     temp_file=$(mktemp)
-
+    
     # Create a backup
     cp "$file_path" "$file_path.bak"
-
+    
     # Process the file to fix issues
     awk -v check_trailing="${check_trailing:-true}" -v check_whitespace_only="${check_whitespace_only:-true}" '
     {
         line = $0
-
+        
         # Fix trailing whitespace
         if (check_trailing == "true") {
             gsub(/[ \t]+$/, "", line)
         }
-
+        
         # Fix whitespace-only lines (convert to empty lines)
         if (check_whitespace_only == "true" && line ~ /^[ \t]+$/) {
             line = ""
         }
-
+        
         print line
     }' "$file_path" > "$temp_file"
-
+    
     # Replace original file if changes were made
     if ! cmp -s "$file_path" "$temp_file"; then
         mv "$temp_file" "$file_path"
@@ -262,17 +262,17 @@ fix_file() {
 process_directory() {
     local dir_path=$1
     local depth=${2:-0}
-
+    
     # Limit recursion depth to prevent infinite loops
     if [[ $depth -gt 20 ]]; then
         return
     fi
-
+    
     if [[ ! -d "$dir_path" ]]; then
         print_status "$RED" "Error: Directory '$dir_path' does not exist"
         return 1
     fi
-
+    
     # Process files in current directory
     for item in "$dir_path"/*; do
         if [[ -f "$item" ]]; then
@@ -292,34 +292,34 @@ process_directory() {
 # Function to display summary
 display_summary() {
     print_status "$CYAN" "\n=== WHITESPACE LINT SUMMARY ==="
-
+    
     if [[ $total_files -eq 0 ]]; then
         print_status "$YELLOW" "No files were processed."
         return 0
     fi
-
+    
     print_status "$BLUE" "Files processed: $total_files"
-
+    
     if [[ $files_with_issues -eq 0 ]]; then
         print_status "$GREEN" "✅ All files are clean! No whitespace issues found."
         return 0
     fi
-
+    
     print_status "$RED" "Files with issues: $files_with_issues"
     print_status "$RED" "Total issues found: $total_issues"
-
+    
     if [[ $trailing_spaces -gt 0 ]]; then
         print_status "$RED" "  - Trailing whitespace: $trailing_spaces"
     fi
-
+    
     if [[ $whitespace_only_lines -gt 0 ]]; then
         print_status "$YELLOW" "  - Whitespace-only lines: $whitespace_only_lines"
     fi
-
+    
     if [[ "${fix:-false}" != "true" && $total_issues -gt 0 ]]; then
         print_status "$CYAN" "\n💡 Tip: Use -f/--fix to automatically fix these issues"
     fi
-
+    
     return 1
 }
 
@@ -332,7 +332,7 @@ main() {
     local quiet=false
     local check_trailing=true
     local check_whitespace_only=true
-
+    
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -383,23 +383,23 @@ main() {
                 ;;
         esac
     done
-
+    
     # Default to current directory if no targets specified
     if [[ ${#targets[@]} -eq 0 ]]; then
         targets=(".")
     fi
-
+    
     # Validate that at least one check type is enabled
     if [[ "$check_trailing" == "false" && "$check_whitespace_only" == "false" ]]; then
         print_status "$RED" "Error: At least one check type must be enabled"
         exit 1
     fi
-
+    
     print_status "$BLUE" "🔍 Starting whitespace lint check..."
     if [[ "$fix" == "true" ]]; then
         print_status "$YELLOW" "🔧 Fix mode enabled - issues will be automatically corrected"
     fi
-
+    
     # Process each target
     for target in "${targets[@]}"; do
         if [[ -f "$target" ]]; then
@@ -415,7 +415,7 @@ main() {
             exit 1
         fi
     done
-
+    
     # Display summary
     if ! display_summary; then
         exit 1
