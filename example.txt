@@ -1,0 +1,7 @@
+this line has no trailing whitespace
+
+the line above this one has no whitespace
+  
+the line above this one has two spaces, and nothing else
+   
+the line above this has a tab and a space
