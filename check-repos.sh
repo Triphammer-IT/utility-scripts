@@ -152,7 +152,18 @@ commit_and_push_repo() {
 
 # Function to handle batch operations
 handle_batch_operations() {
-    local all_repos=("${repos_with_both[@]}" "${repos_with_uncommitted[@]}" "${repos_with_unpushed[@]}")
+    local all_repos=()
+
+    # Safely combine arrays, handling empty arrays
+    if [[ ${#repos_with_both[@]} -gt 0 ]]; then
+        all_repos+=("${repos_with_both[@]}")
+    fi
+    if [[ ${#repos_with_uncommitted[@]} -gt 0 ]]; then
+        all_repos+=("${repos_with_uncommitted[@]}")
+    fi
+    if [[ ${#repos_with_unpushed[@]} -gt 0 ]]; then
+        all_repos+=("${repos_with_unpushed[@]}")
+    fi
 
     if [[ ${#all_repos[@]} -eq 0 ]]; then
         return
@@ -296,7 +307,19 @@ main() {
     if ! display_summary; then
         # Show detailed status if requested
         if [[ "$detailed" == true ]]; then
-            local all_repos=("${repos_with_both[@]}" "${repos_with_uncommitted[@]}" "${repos_with_unpushed[@]}")
+            local all_repos=()
+
+            # Safely combine arrays, handling empty arrays
+            if [[ ${#repos_with_both[@]} -gt 0 ]]; then
+                all_repos+=("${repos_with_both[@]}")
+            fi
+            if [[ ${#repos_with_uncommitted[@]} -gt 0 ]]; then
+                all_repos+=("${repos_with_uncommitted[@]}")
+            fi
+            if [[ ${#repos_with_unpushed[@]} -gt 0 ]]; then
+                all_repos+=("${repos_with_unpushed[@]}")
+            fi
+
             for repo in "${all_repos[@]}"; do
                 show_detailed_status "$repo"
             done

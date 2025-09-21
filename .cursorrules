@@ -1,0 +1,47 @@
+# Cursor Rules for Whitespace Management
+
+## Whitespace Rules
+
+### Trailing Whitespace
+- Remove trailing spaces and tabs from all lines
+- No spaces or tabs should appear at the end of lines
+- Empty lines should be truly empty (no whitespace characters)
+
+### Whitespace-Only Lines
+- Lines containing only spaces or tabs should be converted to empty lines
+- Preserve intentional empty lines (no whitespace characters)
+- Maintain code structure and formatting
+
+### File Types
+
+Apply these rules to all text files including:
+- Shell scripts (.sh, .bash)
+- Python files (.py)
+- JavaScript/TypeScript (.js, .ts)
+- HTML/CSS (.html, .css)
+- Markdown (.md)
+- Terraform (.tf)
+- Configuration files (.yml, .yaml, .json, .xml)
+- Documentation (.txt)
+- Source code (.go, .rs, .java, .cpp, .c)
+
+### Implementation
+- When editing files, automatically remove trailing whitespace
+- Convert whitespace-only lines to empty lines
+- Show whitespace characters visually when editing
+- Highlight trailing whitespace as an error
+- Provide quick fix to remove trailing whitespace
+
+### Exceptions
+- Python files: Be careful with indentation (spaces are syntax)
+- YAML files: Preserve meaningful whitespace structure
+- Markdown files: Multiple spaces can create line breaks
+- Assembly files: Some whitespace may be significant
+
+### Visual Indicators
+- Show trailing spaces as visible characters (·)
+- Show tabs as visible characters (→)
+- Highlight whitespace-only lines
+- Use different colors for different types of whitespace issues
+
+This rule ensures clean, consistent whitespace across all files while preserving the semantic meaning of whitespace where it matters.
